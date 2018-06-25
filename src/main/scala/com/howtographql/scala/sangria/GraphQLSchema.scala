@@ -2,12 +2,20 @@ package com.howtographql.scala.sangria
 
 import sangria.schema.{ListType, ObjectType}
 import models._
+import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.schema._
 import sangria.macros.derive._
 
 object GraphQLSchema {
 
   implicit val LinkType = deriveObjectType[Unit, Link]()
+  implicit val linkHasId = HasId[Link, Int](_.id)
+
+  val linksFetcher = Fetcher(
+    (ctx: MyContext, ids: Seq[Int]) => ctx.dao.getLinks(ids)
+  )
+
+  val Resolver = DeferredResolver.fetchers(linksFetcher)
 
 
   val Id = Argument("id", IntType)
@@ -20,12 +28,12 @@ object GraphQLSchema {
       Field("link",
         OptionType(LinkType),
         arguments = Id :: Nil,
-        resolve = c => c.ctx.dao.getLink(c.arg(Id))
+        resolve = c => linksFetcher.deferOpt(c.arg(Id))
       ),
       Field("links",
         ListType(LinkType),
         arguments = Ids :: Nil,
-        resolve = c => c.ctx.dao.getLinks(c.arg(Ids))
+        resolve = c => linksFetcher.deferSeq(c.arg(Ids))
       )
     )
   )
