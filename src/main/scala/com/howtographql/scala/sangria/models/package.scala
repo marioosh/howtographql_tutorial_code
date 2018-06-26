@@ -14,7 +14,7 @@ package object models {
     implicit def hasId[T <: Identifiable]: HasId[T, Int] = HasId(_.id)
   }
 
-  case class Link(id: Int, url: String, description: String, createdAt: DateTime) extends Identifiable
+  case class Link(id: Int, url: String, description: String, postedBy: Int, createdAt: DateTime = DateTime.now) extends Identifiable
 
   case object DateTimeCoerceViolation extends Violation {
     override def errorMessage: String = "Error during parsing DateTime"
