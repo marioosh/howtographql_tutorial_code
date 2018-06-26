@@ -23,18 +23,38 @@ object GraphQLSchema {
     }
   )
 
+  val IdentifiableType = InterfaceType(
+    "Identifiable",
+    fields[Unit, Identifiable](
+      Field("id", IntType, resolve = _.value.id)
+    )
+  )
 
   val LinkType = deriveObjectType[Unit, Link](
+    Interfaces(IdentifiableType),
     ReplaceField("createdAt", Field("createdAt", GraphQLDateTime, resolve = _.value.createdAt))
   )
 
-  implicit val linkHasId = HasId[Link, Int](_.id)
+  val UserType = deriveObjectType[Unit, User](
+    Interfaces(IdentifiableType)
+  )
+  val VoteType = deriveObjectType[Unit, Vote](
+    Interfaces(IdentifiableType)
+  )
 
   val linksFetcher = Fetcher(
     (ctx: MyContext, ids: Seq[Int]) => ctx.dao.getLinks(ids)
   )
 
-  val Resolver = DeferredResolver.fetchers(linksFetcher)
+  val usersFetcher = Fetcher(
+    (ctx: MyContext, ids: Seq[Int]) => ctx.dao.getUsers(ids)
+  )
+
+  val votesFetcher = Fetcher(
+    (ctx: MyContext, ids: Seq[Int]) => ctx.dao.getVotes(ids)
+  )
+
+  val Resolver = DeferredResolver.fetchers(linksFetcher, usersFetcher, votesFetcher)
 
 
   val Id = Argument("id", IntType)
@@ -53,6 +73,16 @@ object GraphQLSchema {
         ListType(LinkType),
         arguments = Ids :: Nil,
         resolve = c => linksFetcher.deferSeq(c.arg(Ids))
+      ),
+      Field("users",
+        ListType(UserType),
+        arguments = List(Ids),
+        resolve = c => usersFetcher.deferSeq(c.arg(Ids))
+      ),
+      Field("votes",
+        ListType(VoteType),
+        arguments = List(Ids),
+        resolve = c => votesFetcher.deferSeq(c.arg(Ids))
       )
     )
   )
