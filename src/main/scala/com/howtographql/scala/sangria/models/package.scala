@@ -24,5 +24,7 @@ package object models {
 
   case class Vote(id: Int, userId: Int, linkId: Int, createdAt: DateTime = DateTime.now) extends Identifiable
 
+  case class AuthProviderEmail(email: String, password: String)
 
+  case class AuthProviderSignupData(email: AuthProviderEmail)
 }
